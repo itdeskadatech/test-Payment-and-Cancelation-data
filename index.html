@@ -295,6 +295,7 @@ footer{text-align:center;color:var(--mut);font-size:11.5px;padding:20px}
     <div class="card"><h3>Full Payments by Counsellor <span class="sub" style="margin:0">top 10</span></h3><div class="box"><canvas id="c-fp-cn"></canvas></div></div>
     <div class="card"><h3>Full Payments by Manager</h3><div class="box"><canvas id="c-fp-mg"></canvas></div></div>
     <div class="card"><h3>Full Payments by Campus <span class="sub" style="margin:0">top 10</span></h3><div class="box"><canvas id="c-fp-cp"></canvas></div></div>
+    <div class="card"><h3>Full Payments by Process</h3><div class="box"><canvas id="c-fp-pr"></canvas></div></div>
     <div class="card"><h3>Full Payments by Admission Month</h3><div class="box"><canvas id="c-fp-mo"></canvas></div></div>
   </div>
   <h2>Full Payment List</h2>
@@ -304,6 +305,7 @@ footer{text-align:center;color:var(--mut);font-size:11.5px;padding:20px}
     <div><div class="sub">By Manager</div><div class="tw" id="t-fp-mg"></div></div>
     <div><div class="sub">By Team Leader</div><div class="tw" id="t-fp-tl"></div></div>
     <div><div class="sub">By Campus</div><div class="tw" id="t-fp-cp"></div></div>
+    <div><div class="sub">By Process</div><div class="tw" id="t-fp-pr"></div></div>
   </div>
 </main>
 <footer>Higher.Study Admissions Dashboard • live from Google Sheet • auto-refresh every 5 minutes</footer>
@@ -319,7 +321,7 @@ const C = { proc:'Process', date:'Admission Done date', app:'Application Number'
   course:'Course Selected', cn:'Counsellor Name', mg:'Manager', tl:'Team Leader', st:'Current Status',
   pen:'Fees Pending', sem:'Semester Fees Paid', ann:'Annual Fees Paid', rem:'Remark' };
 const ALLCOLS = [C.proc,C.date,C.app,C.name,C.campus,C.course,C.cn,C.mg,C.tl,C.st,C.pen,C.sem,C.ann,C.rem];
-const RECENT_COLS = [C.date,C.app,C.name,C.campus,C.course,C.cn,C.mg,C.tl,C.st,C.pen,C.sem,C.ann,C.rem];
+const RECENT_COLS = [C.date,C.proc,C.app,C.name,C.campus,C.course,C.cn,C.mg,C.tl,C.st,C.pen,C.sem,C.ann,C.rem];
 const FILTERS = [['Process',C.proc],['Campus',C.campus],['Course Selected',C.course],['Counsellor Name',C.cn],['Manager',C.mg],['Team Leader',C.tl],['Current Status',C.st]];
 const PAL = ['#F57C00','#FFA726','#FFCC80','#90A4AE','#607D8B','#37474F','#FB8C00','#BDBDBD','#FFE0B2','#78909C'];
 const MON = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
@@ -652,7 +654,7 @@ function renderFull(rows){
   const kp = $('fp-kpis');
   if(!kp.children.length) kp.innerHTML = K.map(()=>`<div class="kpi"><span class="ic"></span><div class="l"></div><div class="v" data-v="0">0</div><div class="s"></div></div>`).join('');
   [...kp.children].forEach((el,i) => { el.querySelector('.ic').textContent = K[i][2]; el.querySelector('.l').textContent = K[i][0]; el.querySelector('.s').textContent = K[i][3]; countUp(el.querySelector('.v'), K[i][1]); });
-  const gcn = group(fp, C.cn), gmg = group(fp, C.mg), gtl = group(fp, C.tl), gcp = group(fp, C.campus);
+  const gcn = group(fp, C.cn), gmg = group(fp, C.mg), gtl = group(fp, C.tl), gcp = group(fp, C.campus), gpr = group(fp, C.proc);
   const t10 = a => a.slice(0,10);
   const vis = $('view-full').style.display !== 'none';
   if(vis){
@@ -661,11 +663,12 @@ function renderFull(rows){
   chart('c-fp-cp','barh',t10(gcp).map(x=>x.name),[{label:'Full Payments',data:t10(gcp).map(x=>x.adm)}]);
   const mm = new Map(); fp.forEach(r => { if(!r._d) return; const k = ymd(r._d).slice(0,7); mm.set(k,(mm.get(k)||0)+1); });
   const mk = [...mm.keys()].sort();
+  chart('c-fp-pr','doughnut',gpr.map(x=>x.name),[{data:gpr.map(x=>x.adm)}]);
   chart('c-fp-mo','bar',mk,[{label:'Full Payments',data:mk.map(k=>mm.get(k))}]);
   }
   const hd = [...RECENT_COLS,'Payment Type'];
   table('t-full', hd, fp.map(r => [...RECENT_COLS.map(c => c===C.pen ? r._pen : r[c]), r._sem ? 'Semester + Annual' : 'Annual']), hd);
-  [['t-fp-cn',gcn,'Counsellor Name'],['t-fp-mg',gmg,'Manager'],['t-fp-tl',gtl,'Team Leader'],['t-fp-cp',gcp,'Campus']]
+  [['t-fp-cn',gcn,'Counsellor Name'],['t-fp-mg',gmg,'Manager'],['t-fp-tl',gtl,'Team Leader'],['t-fp-cp',gcp,'Campus'],['t-fp-pr',gpr,'Process']]
     .forEach(([el,g,lab]) => table(el,[lab,'Full Payments'],g.map(x=>[x.name,x.adm])));
   window.__fp = fp;
 }
