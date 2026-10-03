@@ -30,11 +30,12 @@ header h1 small{font-weight:400;font-size:13px;opacity:.9}
 #cd{height:3px;background:rgba(255,255,255,.35);position:absolute;left:0;bottom:0;width:100%}
 #cdb{height:100%;background:#fff;width:0;transition:width 1s linear}
 /* ticker */
-.ticker{background:#263238;color:#fff;overflow:hidden;white-space:nowrap;position:relative;height:34px;display:flex;align-items:center}
-.ticker b{background:var(--o);padding:0 14px;height:100%;display:flex;align-items:center;z-index:2;font-size:12px;letter-spacing:1px}
-.tk{display:inline-block;padding-left:100%;animation:mq 90s linear infinite;font-size:12.5px}
+.ticker{background:#263238;color:#fff;overflow:hidden;white-space:nowrap;position:relative;height:38px;display:flex;align-items:center}
+.ticker>b{background:var(--o);padding:0 16px;height:100%;display:flex;align-items:center;z-index:2;font-size:12px;letter-spacing:1px;flex:none;box-shadow:4px 0 10px rgba(0,0,0,.35)}
+.tk b{color:#FFCC80;font-weight:700;background:none;padding:0;display:inline;height:auto}
+.tk{display:inline-block;padding-left:100%;animation:mq 90s linear infinite;font-size:12.5px;line-height:38px;white-space:nowrap;flex:none}
 .ticker:hover .tk{animation-play-state:paused}
-.tk span{margin-right:42px}.tk i{color:var(--o2);font-style:normal;margin-right:6px}
+.tk span{margin-right:48px;display:inline-block;white-space:nowrap}.tk i{color:var(--o2);font-style:normal;margin-right:6px}
 @keyframes mq{to{transform:translateX(-100%)}}
 /* nav */
 nav{background:var(--card);padding:8px 24px;display:flex;gap:8px;overflow-x:auto;border-bottom:1px solid var(--g2)}
@@ -653,12 +654,15 @@ function renderFull(rows){
   [...kp.children].forEach((el,i) => { el.querySelector('.ic').textContent = K[i][2]; el.querySelector('.l').textContent = K[i][0]; el.querySelector('.s').textContent = K[i][3]; countUp(el.querySelector('.v'), K[i][1]); });
   const gcn = group(fp, C.cn), gmg = group(fp, C.mg), gtl = group(fp, C.tl), gcp = group(fp, C.campus);
   const t10 = a => a.slice(0,10);
+  const vis = $('view-full').style.display !== 'none';
+  if(vis){
   chart('c-fp-cn','barh',t10(gcn).map(x=>x.name),[{label:'Full Payments',data:t10(gcn).map(x=>x.adm)}]);
   chart('c-fp-mg','bar',gmg.map(x=>x.name),[{label:'Full Payments',data:gmg.map(x=>x.adm)}]);
   chart('c-fp-cp','barh',t10(gcp).map(x=>x.name),[{label:'Full Payments',data:t10(gcp).map(x=>x.adm)}]);
   const mm = new Map(); fp.forEach(r => { if(!r._d) return; const k = ymd(r._d).slice(0,7); mm.set(k,(mm.get(k)||0)+1); });
   const mk = [...mm.keys()].sort();
   chart('c-fp-mo','bar',mk,[{label:'Full Payments',data:mk.map(k=>mm.get(k))}]);
+  }
   const hd = [...RECENT_COLS,'Payment Type'];
   table('t-full', hd, fp.map(r => [...RECENT_COLS.map(c => c===C.pen ? r._pen : r[c]), r._sem ? 'Semester + Annual' : 'Annual']), hd);
   [['t-fp-cn',gcn,'Counsellor Name'],['t-fp-mg',gmg,'Manager'],['t-fp-tl',gtl,'Team Leader'],['t-fp-cp',gcp,'Campus']]
@@ -672,7 +676,7 @@ document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
   const full = b.dataset.v === 'full';
   $('view-dash').style.display = full ? 'none' : ''; $('view-full').style.display = full ? '' : 'none'; $('nav').style.display = full ? 'none' : '';
   const v = full ? $('view-full') : $('view-dash'); v.classList.remove('view-in'); void v.offsetWidth; v.classList.add('view-in');
-  window.scrollTo({top:0}); setTimeout(() => Object.values(charts).forEach(c => c.resize && c.resize()), 60);
+  window.scrollTo({top:0}); if(ALL.length) render(); setTimeout(() => Object.values(charts).forEach(c => { if(c.resize) c.resize(); }), 80);
 });
 function startSpotlight(g){
   clearInterval(spotTimer);
