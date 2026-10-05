@@ -56,7 +56,7 @@ main{padding:16px 24px 40px;max-width:1560px;margin:auto}
 .kpi:hover{transform:translateY(-4px);box-shadow:0 10px 22px rgba(245,124,0,.22)}
 .kpi:after{content:"";position:absolute;right:-24px;top:-24px;width:90px;height:90px;border-radius:50%;background:var(--ol)}
 .kpi .ic{position:absolute;right:12px;top:10px;font-size:22px;z-index:1}
-.kpi .l{font-weight:700;font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+.kpi .l{font-weight:700;font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;padding-right:38px;line-height:1.25;min-height:29px;position:relative;z-index:1}
 .kpi .v{font-size:31px;font-weight:800;color:var(--o);margin:4px 0 2px;position:relative;z-index:1}
 .kpi .s{font-size:11px;color:var(--mut);position:relative;z-index:1;min-height:14px}
 .kpi .bar{height:5px;background:var(--g);border-radius:4px;margin-top:7px;overflow:hidden;position:relative;z-index:1}
@@ -198,7 +198,7 @@ footer{text-align:center;color:var(--mut);font-size:11.5px;padding:20px}
   <a href="#kpis">Overview</a><a href="#sec-trend">Trends</a><a href="#sec-board">Leaderboards</a><a href="#sec-proc">Process</a><a href="#sec-adm">Admissions</a>
   <a href="#sec-cn">Counsellors</a><a href="#sec-mg">Managers</a><a href="#sec-tl">Team Leaders</a><a href="#sec-campus">Campus</a>
   <a href="#sec-course">Courses</a><a href="#sec-status">Status</a><a href="#sec-fees">Fees</a><a href="#sec-recent">Recent</a>
-  <a href="#sec-can">Cancelled</a><a href="#sec-pen">Pending</a>
+  <a href="#sec-can">Cancelled</a><a href="#sec-pen">Pending</a><a href="#sec-nu">Not Updated</a>
 </nav>
 <div id="msg"></div>
 <div id="filters"></div>
@@ -308,6 +308,13 @@ footer{text-align:center;color:var(--mut);font-size:11.5px;padding:20px}
   <h2 id="sec-pen">Pending Fees <small>Fees Pending amount &gt; 0</small></h2>
   <div class="sub">Pending amount by Process</div><div class="tw" id="t-pen-pr" style="max-height:260px;margin-bottom:14px"></div>
   <div class="tw" id="t-pending"></div>
+
+  <h2 id="sec-nu">Not Updated Yet <small>Fees Paid Till Now, Fees Pending, Semester &amp; Annual Fees Paid are all blank</small></h2>
+  <div class="two">
+    <div><div class="sub">By Counsellor Name</div><div class="tw" id="t-nu-cn" style="max-height:300px"></div></div>
+    <div><div class="sub">By Manager</div><div class="tw" id="t-nu-mg" style="max-height:300px"></div></div>
+  </div>
+  <input class="srch" data-t="t-nu" placeholder="🔍 Search not-updated records…" style="margin-top:14px"><div class="tw" id="t-nu"></div>
 </main>
 
 <main id="view-full" style="display:none">
@@ -392,7 +399,7 @@ function toast(t){ const e = $('toast'); e.textContent = t; e.classList.add('sho
 function ingest(text){
   const res = Papa.parse(text, {header:true, skipEmptyLines:true, transformHeader:h=>h.trim()});
   const rows = res.data.map(r => { const o = {}; Object.keys(r).forEach(k => o[k] = (r[k] ?? '').toString().trim()); return o; }).filter(r => r[C.name]);
-  rows.forEach(r => { r._d = parseDate(r[C.date]); r._paid = num(r[C.paid]); r._pen = num(r[C.pen]); r._sem = isYes(r[C.sem]); r._ann = isYes(r[C.ann]); r._can = isCancelled(r); });
+  rows.forEach(r => { r._d = parseDate(r[C.date]); r._paid = num(r[C.paid]); r._pen = num(r[C.pen]); r._sem = isYes(r[C.sem]); r._ann = isYes(r[C.ann]); r._can = isCancelled(r); r._nu = (!r[C.paid] && !r[C.pen] && !r[C.sem] && !r[C.ann]) ? 1 : 0; });
   const prev = lastCount; ALL = rows; buildFilters(); render();
   if(prev !== null && rows.length > prev) confetti(); toast('🎉 ' + (rows.length - prev) + ' new admission' + (rows.length-prev>1?'s':'') + ' just arrived!');
   lastCount = rows.length;
@@ -534,6 +541,7 @@ function render(){
     ['Total Semester Fees Paid',sum('_sem'),'✅','(count of “Yes”)', tot?sum('_sem')/tot*100:0,''],
     ['Total Annual Fees Paid',sum('_ann'),'💰','(count of “Yes”)', tot?sum('_ann')/tot*100:0,''],
     ['Full Payment Done',rows.filter(r=>r._ann).length,'🏆','Annual Fees = Yes', tot?rows.filter(r=>r._ann).length/tot*100:0,''],
+    ['Not Updated Yet',sum('_nu'),'📝','fee fields still blank', tot?sum('_nu')/tot*100:0,''],
     ['Cancelled Admissions',can,'⛔',tot?`${fmt(can)} of ${fmt(tot)} admissions`:'', tot?can/tot*100:0,''],
     ['Active Admissions',tot-can,'⚡','currently active', tot?(tot-can)/tot*100:0,'']
   ];
@@ -611,6 +619,10 @@ function render(){
   // pending
   const pr = rows.filter(r=>r._pen>0).sort((a,b)=>b._pen-a._pen);
   table('t-pending', RECENT_COLS, pr.map(rowOf), RECENT_COLS);
+  const nu = rows.filter(r => r._nu).sort((a,b) => (b._d||0) - (a._d||0));
+  table('t-nu', RECENT_COLS, nu.map(rowOf), RECENT_COLS);
+  table('t-nu-cn', ['Counsellor Name','Not Updated'], group(nu, C.cn).map(g => [g.name,g.adm]));
+  table('t-nu-mg', ['Manager','Not Updated'], group(nu, C.mg).map(g => [g.name,g.adm]));
 
   renderExtras(rows,{dm,mm,gcn,gc,go,tot,can,dated});
   renderProcess(rows,{gcn,gmg,gtl,gc,go,gs,cr,pr});
