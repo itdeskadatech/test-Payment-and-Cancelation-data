@@ -309,7 +309,7 @@ footer{text-align:center;color:var(--mut);font-size:11.5px;padding:20px}
   <div class="sub">Pending amount by Process</div><div class="tw" id="t-pen-pr" style="max-height:260px;margin-bottom:14px"></div>
   <div class="tw" id="t-pending"></div>
 
-  <h2 id="sec-nu">Not Updated Yet <small>all 5 fields blank: Fees Paid Till Now, Fees Pending, Semester Fees Paid, Annual Fees Paid, Remark</small></h2>
+  <h2 id="sec-nu">Not Updated Yet <small>Current Status = Enrolled and all 5 fields blank: Fees Paid Till Now, Fees Pending, Semester Fees Paid, Annual Fees Paid, Remark</small></h2>
   <div class="kpis" id="nu-kpis" style="margin-bottom:12px"></div>
   <div class="two">
     <div><div class="sub">By Counsellor Name</div><div class="tw" id="t-nu-cn" style="max-height:300px"></div></div>
@@ -400,7 +400,7 @@ function toast(t){ const e = $('toast'); e.textContent = t; e.classList.add('sho
 function ingest(text){
   const res = Papa.parse(text, {header:true, skipEmptyLines:true, transformHeader:h=>h.trim()});
   const rows = res.data.map(r => { const o = {}; Object.keys(r).forEach(k => o[k] = (r[k] ?? '').toString().trim()); return o; }).filter(r => r[C.name]);
-  rows.forEach(r => { r._d = parseDate(r[C.date]); r._paid = num(r[C.paid]); r._pen = num(r[C.pen]); r._sem = isYes(r[C.sem]); r._ann = isYes(r[C.ann]); r._can = isCancelled(r); r._fb = (!r[C.paid] && !r[C.pen] && !r[C.sem] && !r[C.ann]) ? 1 : 0; r._nu = (r._fb && !r[C.rem]) ? 1 : 0; });
+  rows.forEach(r => { r._d = parseDate(r[C.date]); r._paid = num(r[C.paid]); r._pen = num(r[C.pen]); r._sem = isYes(r[C.sem]); r._ann = isYes(r[C.ann]); r._can = isCancelled(r); r._fb = (!r[C.paid] && !r[C.pen] && !r[C.sem] && !r[C.ann]) ? 1 : 0; r._en = /^\s*enrolled\s*$/i.test(r[C.st]) ? 1 : 0; r._nu = (r._en && r._fb && !r[C.rem]) ? 1 : 0; });
   const prev = lastCount; ALL = rows; buildFilters(); render();
   if(prev !== null && rows.length > prev) confetti(); toast('🎉 ' + (rows.length - prev) + ' new admission' + (rows.length-prev>1?'s':'') + ' just arrived!');
   lastCount = rows.length;
@@ -543,7 +543,7 @@ function render(){
     ['Total Semester Fees Paid',sum('_sem'),'✅','(count of “Yes”)', tot?sum('_sem')/tot*100:0,''],
     ['Total Annual Fees Paid',sum('_ann'),'💰','(count of “Yes”)', tot?sum('_ann')/tot*100:0,''],
     ['Full Payment Done',rows.filter(r=>r._ann).length,'🏆','Annual Fees = Yes', tot?rows.filter(r=>r._ann).length/tot*100:0,''],
-    ['Not Updated Yet',sum('_nu'),'📝','Paid, Pending, Semester, Annual & Remark all blank', tot?sum('_nu')/tot*100:0,''],
+    ['Not Updated Yet',sum('_nu'),'📝','Enrolled & Paid, Pending, Semester, Annual, Remark all blank', tot?sum('_nu')/tot*100:0,''],
     ['Cancelled Admissions',can,'⛔',tot?`${fmt(can)} of ${fmt(tot)} admissions`:'', tot?can/tot*100:0,''],
     ['Active Admissions',tot-can,'⚡','currently active', tot?(tot-can)/tot*100:0,'']
   ];
@@ -622,8 +622,8 @@ function render(){
   const pr = rows.filter(r=>r._pen>0).sort((a,b)=>b._pen-a._pen);
   table('t-pending', RECENT_COLS, pr.map(rowOf), RECENT_COLS);
   const nu = rows.filter(r => r._nu).sort((a,b) => (b._d||0) - (a._d||0));
-  const noted = rows.filter(r => r._fb && r[C.rem]);
-  $('nu-kpis').innerHTML = [['📝','Not Updated Yet',nu.length,'Paid, Pending, Semester, Annual & Remark all blank'],['💬','Remark noted, fees still blank',noted.length,'not counted above (a note is written)']]
+  const noted = rows.filter(r => r._en && r._fb && r[C.rem]);
+  $('nu-kpis').innerHTML = [['📝','Not Updated Yet',nu.length,'Enrolled & Paid, Pending, Semester, Annual, Remark all blank'],['💬','Remark noted, fees still blank',noted.length,'not counted above (a note is written)']]
     .map(k => `<div class="kpi"><span class="ic">${k[0]}</span><div class="l">${k[1]}</div><div class="v">${fmt(k[2])}</div><div class="s">${k[3]}</div></div>`).join('');
   table('t-nu', RECENT_COLS, nu.map(rowOf), RECENT_COLS);
   table('t-nu-cn', ['Counsellor Name','Not Updated'], group(nu, C.cn).map(g => [g.name,g.adm]));
